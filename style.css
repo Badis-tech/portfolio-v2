@@ -425,6 +425,7 @@ body.light-mode .card h4 { color: #000; }
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     box-shadow: 0 0 20px var(--accent-dim);
+    touch-action: none; /* Prevents scrolling while swiping */
 }
 
 #gameScore {
@@ -432,6 +433,41 @@ body.light-mode .card h4 { color: #000; }
     font-size: 1.2rem;
     margin-top: 1rem;
     color: var(--accent-color);
+}
+
+.leaderboard-box {
+    width: 100%;
+    max-width: 300px;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+.leaderboard-box h4 {
+    color: var(--accent-color);
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.leaderboard-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.leaderboard-box li {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.2rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.leaderboard-box li:last-child {
+    border-bottom: none;
 }
 
 /* CONTACT */

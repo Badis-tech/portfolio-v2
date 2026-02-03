@@ -1,12 +1,13 @@
 /**
  * MINI GAME: SNAKE
- * A retro logic game for the portfolio.
  * Supports Keyboard (Desktop) and Swipe (Mobile).
+ * Includes Local Leaderboard (LocalStorage).
  */
 function initSnakeGame() {
     const canvas = document.getElementById('gameCanvas');
     const scoreElement = document.getElementById('gameScore');
     const restartBtn = document.getElementById('restartGame');
+    const leaderboardElement = document.getElementById('leaderboard'); // New: Leaderboard container
     
     if (!canvas || !scoreElement || !restartBtn) return;
 
@@ -20,6 +21,7 @@ function initSnakeGame() {
     let dy = 0;
     let score = 0;
     let gameLoop;
+    let isGameOver = false;
 
     // Colors (dynamic based on theme)
     function getColors() {
@@ -37,10 +39,12 @@ function initSnakeGame() {
         dx = 0;
         dy = 0;
         score = 0;
+        isGameOver = false;
         scoreElement.innerText = `Score: ${score}`;
         placeFood();
         if (gameLoop) clearInterval(gameLoop);
         gameLoop = setInterval(gameStep, 100);
+        renderLeaderboard(); // Clear any "Game Over" messages
     }
 
     function placeFood() {
@@ -105,14 +109,60 @@ function initSnakeGame() {
 
     function gameOver() {
         clearInterval(gameLoop);
+        isGameOver = true;
+        saveScore(score);
         scoreElement.innerText = `Game Over! Score: ${score}`;
+        renderLeaderboard();
+    }
+
+    // --- LEADERBOARD (LocalStorage) ---
+    function saveScore(newScore) {
+        if (newScore === 0) return;
+        
+        let scores = JSON.parse(localStorage.getItem('snakeLeaderboard')) || [];
+        
+        // Ask for name (simple prompt)
+        const name = prompt("New High Score! Enter your name (max 10 chars):", "Player") || "Player";
+        const cleanName = name.substring(0, 10);
+
+        scores.push({ name: cleanName, score: newScore, date: new Date().toLocaleDateString() });
+        
+        // Sort descending
+        scores.sort((a, b) => b.score - a.score);
+        
+        // Keep top 5
+        scores = scores.slice(0, 5);
+        
+        localStorage.setItem('snakeLeaderboard', JSON.stringify(scores));
+    }
+
+    function renderLeaderboard() {
+        if (!leaderboardElement) return;
+
+        const scores = JSON.parse(localStorage.getItem('snakeLeaderboard')) || [];
+        
+        let html = '<h4>🏆 Local Leaderboard</h4>';
+        if (scores.length === 0) {
+            html += '<p>No scores yet. Be the first!</p>';
+        } else {
+            html += '<ul>';
+            scores.forEach((entry, index) => {
+                html += `<li><span>#${index + 1} ${entry.name}</span> <span>${entry.score}</span></li>`;
+            });
+            html += '</ul>';
+        }
+        
+        leaderboardElement.innerHTML = html;
     }
 
     // --- CONTROLS ---
 
     // 1. Keyboard (Desktop)
     document.addEventListener('keydown', (e) => {
-        // Prevent scrolling with arrow keys
+        if (isGameOver && e.key === 'Enter') {
+            resetGame();
+            return;
+        }
         if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
             e.preventDefault();
         }
@@ -132,39 +182,32 @@ function initSnakeGame() {
     canvas.addEventListener('touchstart', (e) => {
         touchStartX = e.changedTouches[0].screenX;
         touchStartY = e.changedTouches[0].screenY;
-        e.preventDefault(); // Prevent scrolling
+        e.preventDefault();
     }, { passive: false });
 
     canvas.addEventListener('touchend', (e) => {
+        if (isGameOver) return; // Don't move if game over
+
         const touchEndX = e.changedTouches[0].screenX;
         const touchEndY = e.changedTouches[0].screenY;
         
         const diffX = touchEndX - touchStartX;
         const diffY = touchEndY - touchStartY;
 
-        // Determine if horizontal or vertical swipe was stronger
         if (Math.abs(diffX) > Math.abs(diffY)) {
-            // Horizontal
-            if (diffX > 0 && dx !== -1) { // Swipe Right
-                dx = 1; dy = 0;
-            } else if (diffX < 0 && dx !== 1) { // Swipe Left
-                dx = -1; dy = 0;
-            }
+            if (diffX > 0 && dx !== -1) { dx = 1; dy = 0; }
+            else if (diffX < 0 && dx !== 1) { dx = -1; dy = 0; }
         } else {
-            // Vertical
-            if (diffY > 0 && dy !== -1) { // Swipe Down
-                dx = 0; dy = 1;
-            } else if (diffY < 0 && dy !== 1) { // Swipe Up
-                dx = 0; dy = -1;
-            }
+            if (diffY > 0 && dy !== -1) { dx = 0; dy = 1; }
+            else if (diffY < 0 && dy !== 1) { dx = 0; dy = -1; }
         }
         e.preventDefault();
     }, { passive: false });
 
     restartBtn.addEventListener('click', resetGame);
 
-    // Start
-    resetGame();
+    // Initial Render
+    renderLeaderboard();
 }
 
 document.addEventListener('DOMContentLoaded', initSnakeGame);
